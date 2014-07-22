@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<link href='/static/css/style.css' rel='stylesheet'>
+		<script src='/static/jquery-2.0.3.min.js'></script>
+		<script type="text/javascript" src="/static/d3.v3.js"></script>
+		<script type='text/javascript'>
+			$(document).ready(function() {
+				$("#name-input").click(function(e) {
+					$.post("/name", {"name": $("input[name='name']").val()})
+					.done(function(data) {
+						$("#name-display").show();
+						$("#name-display").html(data['greeting']);
+					});
+					e.preventDefault();
+				});
+
+				$("#length-input").click(function(e) {
+					$(".chart").empty();
+					refreshPlot($("input[name='length']").val())
+				});
+			});
+		</script>
+	</head>
+	<body>
+		<div id="name-display"></div>
+		<input type="text" value="ali" name="name" />
+			<button id="name-input">Submit</button>
+		</input>
+		<input type="text" value="5" name="length" />
+			<button id="length-input">Submit</button>
+		</input>
+		<div class="chart"></div>
+		<script type="text/javascript">
+			function refreshPlot(n){
+				console.log(n);
+				var load = "length="+n;
+				console.log(load);
+				d3.xhr("/data")
+				.header("Content-Type","application/x-www-form-urlencoded")
+				.send("POST",load, function(error, respone_data){
+					console.log(respone_data);
+					data = JSON.parse(respone_data['response']);
+					console.log(data.values);
+
+					var x = d3.scale.linear()
+					.domain([0, d3.max(data.values)])
+					.range([0, 420]);
+
+					d3.select(".chart")
+					.selectAll("div")
+					.data(data.values)
+					.enter().append("div")
+					.style("width", function(d) { return x(d) + "px"; })
+					.text(function(d) { return d; });
+				})
+			}
+			
+        </script>
+	</body>
+</html>
+

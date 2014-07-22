@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<link href='/static/css/style.css' rel='stylesheet'>
+		<script type="text/javascript" src="/static/js/d3.v3.js"></script>
+		<script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
+		<script type="text/javascript" src='/static/js/jquery-2.0.3.min.js'></script>
+		<script type="text/javascript" src="/static/js/sorttable.js"></script>
+		<script type="text/javascript" src='/static/js/spyre.js'></script>
+		<script type='text/javascript'>
+			
+			$(document).ready(function() {
+				function updateSharedParameters(){
+					shared_params = "";
+					{% for field in shared_fields %}
+						var {{field['variable_name']}} = $("#{{field['variable_name']}}").val();
+						shared_params = shared_params+"{{field['variable_name']}}="+{{field['variable_name']}}+"&";
+						console.log(shared_params)
+					{% endfor %}
+				}
+
+				{% for control in controls %}
+					{% if control['output_type']=='image' %}
+						$("#{{control['button_id']}}").click(function(e) {
+							$(".chart").empty();
+							updateSharedParameters()
+							var  params = "";
+							{% for field in control['text_fields'] %}
+								var {{field['variable_name']}} = $("#{{field['variable_name']}}").val();
+								params = params+"{{field['variable_name']}}="+{{field['variable_name']}}+"&"
+							{% endfor %}
+							params = params+shared_params;
+							console.log(params)
+							makeBarPlot(params)
+							// $.ajax({
+							// 	url : "/plot?"+params,
+							// 	success: function(data, textStatus, jqXHR)
+							// 	{var plot = $("<img />").attr('src', data.img_path)
+							// 		.load(function() {
+							// 			console.log(plot)
+							// 		    if (!this.complete || typeof this.naturalWidth == "undefined" || this.naturalWidth == 0) {
+							// 		        alert('broken image!');
+							// 		    } else {
+							// 		        $(".plot").append(plot);
+							// 		    }
+							// 		});
+							// 	}
+							// });
+						});
+
+					{% endif %}
+					{% if control['output_type']=='table' %}
+						$("#{{control['button_id']}}").click(function(e) {
+							updateSharedParameters()
+							var  params = "";
+							{% for field in control['text_fields'] %}
+								var {{field['variable_name']}} = $("#{{field['variable_name']}}").val();
+								params = params+"{{field['variable_name']}}="+{{field['variable_name']}}+"&"
+							{% endfor %}
+							params = params+shared_params;
+						sortable = document.getElementById('sortable');
+						$.ajax({
+							url : "/data/tst?"+params,
+							success: function(response, textStatus, jqXHR){
+								$(".sortable").empty();
+								th = document.createElement('thead');
+								tb = document.createElement('tbody');
+								data = response['data'];
+								console.log(data)
+								keys = Object.keys(data[0]);
+								console.log(keys);
+								if (data.length > 0){
+									var tr = document.createElement('tr');
+									for (var i = 0; i<keys.length; i++) {
+										var td = document.createElement('td');
+										var text = document.createTextNode(keys[i]);
+										td.appendChild(text);
+										tr.appendChild(td);
+									}
+									th.appendChild(tr);
+									sortable.appendChild(th);
+
+									for(var j = 0; j < data.length; j++) {
+										var tr = document.createElement('tr');
+										for (var i = 0; i < keys.length; i++) {
+											var td = document.createElement('td');
+											var text = document.createTextNode(data[j][keys[i]]);
+											td.appendChild(text);
+											tr.appendChild(td);
+										}
+										tb.appendChild(tr)
+									}
+								}
+								sortable.appendChild(tb);
+								forEach(document.getElementsByTagName('table'), function(table) {
+							      if (table.className.search(/\bsortable\b/) != -1) {
+							      	console.log("hello");
+							        sorttable.makeSortable(table);
+							      }
+							    });
+							}
+							
+						});
+					});
+					{% endif %}
+				{% endfor %}
+			});
+		</script>
+	</head>
+	<body>
+		{% for field in shared_fields %}
+			{{field['label']}}: <input type="{{field['input_type']}}" value="{{field['value']}}" id="{{field['variable_name']}}" /><br>
+		{% endfor %}
+		{% for control in controls %}
+			{% for field in control['text_fields'] %}
+			{{field['label']}}: <input type="{{field['input_type']}}" value="{{field['value']}}" id="{{field['variable_name']}}" /><br>
+			{% endfor %}
+		<button id="{{control['button_id']}}">{{control['button_label']}}</button><br>
+		{% endfor %}
+		
+		<div class="plot"></div>
+
+		<svg class="chart"></svg>
+		<script type="text/javascript">
+		function makeBarPlot(params){
+			var margin = {top: 20, right: 30, bottom: 30, left: 60},
+				width = 1500 - margin.left - margin.right,
+				height = 500 - margin.top - margin.bottom;
+
+			var x = d3.scale.ordinal()
+				.rangeRoundBands( [0,width], .1);
+
+			var y = d3.scale.linear()
+				.range([height, 0]);
+
+			var xAxis = d3.svg.axis()
+				.scale(x)
+				.orient("bottom");
+
+			var yAxis = d3.svg.axis()
+				.scale(y)
+				.orient("left")
+				.ticks(10);
+
+			var tip = d3.tip()
+				.attr('class', 'd3-tip')
+				.offset([-10, 0])
+				.html(function(d) {
+				return "<strong>Count:</strong> <span style='color:red'>" + d.count + "</span>";
+				})
+
+			var chart = d3.select(".chart")
+				.attr("width", width + margin.left + margin.right)
+				.attr("height", height + margin.top + margin.bottom)
+				.append("g")
+				.attr("transform", "translate(" +margin.left + "," + margin.top + ")");
+
+			chart.call(tip);
+
+			d3.json("/data/tst?"+params, function(error, json) {
+				if (error) return console.warn(error);
+				data = json.data;
+				
+				x.domain(data.map(function(d) { return d.name; }));
+				y.domain([0, d3.max(data, function(d) { return d.count; })]);
+
+				console.log(data)
+
+				chart.append("g")
+					.attr("class", "x axis")
+					.attr("transform", "translate(0," + height + ")")
+					.call(xAxis);
+
+				chart.append("g")
+					.attr("class", "y axis")
+					.call(yAxis);
+
+				chart.selectAll(".bar")
+					.data(data)
+					.enter().append("rect")
+					.attr("class", "bar")
+					.attr("x", function(d) { return x(d.name); })
+					.attr("y", function(d) { return y(d.count); })
+					.attr("height", function(d) { return height - y(d.count); })
+					.attr("width", x.rangeBand())
+					.on('mouseover', tip.show)
+					.on('mouseout', tip.hide);
+
+				chart.append("g")
+					.attr("class", "y axis")
+					.call(yAxis)
+					.append("text")
+					.attr("transform", "rotate(270)")
+					.attr("y", 12)
+					.style("text-anchor", "end")
+					.text("count");
+			});
+		}
+			
+
+			function type(d) {
+				d.count = +d.count; // coerce to number
+				return d;
+			}
+			
+        </script>
+
+        <table class="sortable" id="sortable">
+			<thead></thead>
+			<tbody></tbody>
+		</table>
+		
+	</body>
+</html>
+
