@@ -1,8 +1,9 @@
-import os, os.path
+import os, os.path 
 import random
 import string
 import simplejson
 import jinja2
+
 
 ROOT_DIR = os.path.abspath(os.getcwd())
 
@@ -22,20 +23,17 @@ class Root(object):
 							"button_label" : "Generate Sine Wave",
 							"button_id" : "submit-plot",
 							"text_fields" : [
-									{"label": 'Amplitude 1', "value": 3, "variable_name": 'amp_val_1', "input_type":'text'},
-									{"label": 'Frequency 1', "value": 5, "variable_name": 'freq_val_1', "input_type":'text'},
-									{"label": 'Amplitude 2', "value": 1, "variable_name": 'amp_val_2', "input_type":'text'},
-									{"label": 'Frequency 2', "value": 2, "variable_name": 'freq_val_2', "input_type":'text'},
-									{"label": 'Amplitude 3', "value": 1, "variable_name": 'amp_val_3', "input_type":'text'},
-									{"label": 'Frequency 3', "value": 2, "variable_name": 'freq_val_3', "input_type":'text'},
+									{"label": 'Amplitude', "value": 3, "variable_name": 'amp_val_1', "input_type":'text'},
+									{"label": 'Frequency', "value": 5, "variable_name": 'freq_val_1', "input_type":'text'},
+									{"label": 'Decay Constant', "value": 1, "variable_name": 'decay_val_1', "input_type":'text'},
 									{"label": 'Number of Cycles', "value": 2, "variable_name": 'n_cycle', "input_type":'text'},
 							]
 						},
-						{"output_type" : "table",
-							"button_label" : "Load THE Table",
-							"button_id" : "load-table",
-							"text_fields" : []
-						}
+# 						{"output_type" : "table",
+# 							"button_label" : "Load THE Table",
+# 							"button_id" : "load-table",
+# 							"text_fields" : []
+# 						}
 						]
 					}
 		template = templateEnv.get_template( "index.html" )
